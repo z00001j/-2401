@@ -7,6 +7,7 @@
 #include<netinet/in.h>
 #include<arpa/inet.h>
 #include<event.h>
+#include<jsoncpp/json/json.h>
 
 using namespace std;
 #define  LIS_MAX 10

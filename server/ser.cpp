@@ -47,8 +47,10 @@ void socket_con::Recv_data()
 
     //测试
     cout<<"recv:"<<buff<<endl;
-
-    send(c,"ok",2,0);
+    //解析
+    Json::Value val;
+    val["status"]="OK";
+    send(c,val.toStyledString().c_str(),strlen(val.toStyledString().c_str()),0);
 }
 void SOCK_CON_CALLBACK(int c,short ev,void* arg)
 {
