@@ -8,9 +8,40 @@
 #include<arpa/inet.h>
 #include<event.h>
 #include<jsoncpp/json/json.h>
+#include<mysql/mysql.h>
 
 using namespace std;
 #define  LIS_MAX 10
+
+enum OP_TYPE{DL=1,ZC,CKYY,YD,CKYD,QXYD,TC};
+
+class mysql_client
+{
+public:
+    mysql_client()
+    {
+        db_ips="127.0.0.1";
+        db_username="root";
+        db_dbname="Project_DB";
+        db_password="060429";
+    }
+
+    ~mysql_client()
+    {
+        mysql_close(&mysql_con);
+    }
+
+    bool mysql_ConnectServer();
+    bool mysql_Register(const string &tel,const string &password,const string &name);
+private:
+    MYSQL mysql_con;
+    string db_ips;
+    string db_username;
+    string db_dbname;
+    string db_password;
+
+};
+
 class socket_listen
 {
 public:
@@ -66,8 +97,16 @@ public:
         close(c);
     }
     void Recv_data();
+    void Send_err();
+    void Send_ok();
+
+    void User_Resgister();
+    void User_Login();
 
 private:
     int c;
     struct event* c_ev;
+
+    Json::Value val;
+    
 };

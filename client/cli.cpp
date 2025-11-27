@@ -101,6 +101,7 @@ void socket_client::User_Resgister()
         cout<<"注册失败"<<endl;
         return;
     }
+    dl_flg=true;
     cout<<"注册成功"<<endl;
     return;
 }
