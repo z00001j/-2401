@@ -43,6 +43,7 @@ public:
 
     void User_Resgister();
     void User_Login();
+    void User_Show_Ticket();
 
     void Run();
 

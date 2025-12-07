@@ -33,6 +33,7 @@ public:
 
     bool mysql_ConnectServer();
     bool mysql_Register(const string &tel,const string &password,const string &name);
+    bool mysql_Login(const string &tel,const string &password, string &name);
 private:
     MYSQL mysql_con;
     string db_ips;
@@ -102,6 +103,8 @@ public:
 
     void User_Resgister();
     void User_Login();
+    void User_Show_Ticket();
+
 
 private:
     int c;

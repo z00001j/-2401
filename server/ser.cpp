@@ -26,6 +26,40 @@ bool mysql_client::mysql_Register(const string &tel,const string &password,const
     }
     return true;
 }
+bool mysql_client::mysql_Login(const string &tel,const string &password,string &name)
+{
+    //select username,password from user_info where tel=13400000000
+    string sql1=string("select username,password from user_info where tel=")+tel;
+    if(mysql_query(&mysql_con,sql1.c_str())!=0)
+    {
+        return false;
+    }
+
+    MYSQL_RES* r=mysql_store_result(&mysql_con);//获取结果集
+    if(r==NULL)
+    {
+        return false;
+    }
+
+    int num=mysql_num_rows(r);//获取结果集有多少行，0行就是未查到，意味着该用户没有注册
+    if(num==0)
+    {
+        mysql_free_result(r);
+        return false;
+    }
+
+    MYSQL_ROW row=mysql_fetch_row(r);
+    
+    string passwd=row[1];
+    if(password.compare(passwd)!=0)
+    {
+        return false;
+    }
+
+    name=row[0];
+    mysql_free_result(r);
+    return true;
+}
 bool socket_listen::socket_init()
 {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -103,8 +137,34 @@ void socket_con::User_Resgister()
 //用户登陆
 void socket_con::User_Login()
 {
+    string tel=val["user_tel"].asString();
+    string password=val["user_password"].asString();
+    string user_name;
 
+    mysql_client cli;
+    if(!cli.mysql_ConnectServer())
+    {
+        Send_err();
+        return ;
+    }
+
+    if(!cli.mysql_Login(tel,password,user_name))
+    {
+        Send_err();
+        return;
+    }
+
+    Json::Value res_val;
+    res_val["status"]="OK";
+    res_val["user_name"]=user_name;
+    send(c,res_val.toStyledString().c_str(),strlen(res_val.toStyledString().c_str()),0);  
+    return;
 }
+void socket_con::User_Show_Ticket()
+{
+    
+}
+
 void socket_con::Recv_data()
 {
     char buff[128] = {0};
@@ -137,7 +197,9 @@ void socket_con::Recv_data()
     case ZC:
         User_Resgister();
         break;
-
+    case CKYY:
+        User_Show_Ticket();
+        break;
     default:
         break;
     }

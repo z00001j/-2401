@@ -107,8 +107,64 @@ void socket_client::User_Resgister()
 }
 void socket_client::User_Login()
 {
-    cout<<"登陆"<<endl;
+    string tel,password;
+    cout<<"请输入手机号码"<<endl;
+    cin>>tel;
+    cout<<"请输入密码"<<endl;
+    cin>>password;
+
+    if(tel.empty()||password.empty())
+    {
+        cout<<"帐号与密码不能为空"<<endl;
+        return ;
+    }
+    
+    Json::Value val;
+    val["type"]=DL;
+    val["user_tel"]=tel;
+    val["user_password"]=password;
+
+    send(sockfd,val.toStyledString().c_str(),strlen(val.toStyledString().c_str()),0);
+
+    char buff[256]={0};
+    int n=recv(sockfd,buff,255,0);
+    if(n<=0)
+    {
+        cout<<"ser close"<<endl;
+    }
+
+    val.clear();
+    Json::Reader Read;
+    if(!Read.parse(buff,val))
+    {
+        cout<<"解析json失败"<<endl;
+        return;
+    }
+
+    string st=val["status"].asString();
+    if(st.compare("OK")!=0)
+    {
+        cout<<"登陆失败"<<endl;
+        return;
+    } 
+
+    dl_flg=true;
+
+    username=val["user_name"].asString();
+    usertel=tel;
+
+    cout<<"登陆成功"<<endl;
+    return ;
 }
+void socket_client::User_Show_Ticket()
+{
+    Json::Value val;
+    val["type"]=CKYY;
+    send(sockfd,val.toStyledString().c_str(),strlen(val.toStyledString().c_str()),0);
+    //
+    char buff[4096]={0};
+}
+
 void socket_client::Run()
 {
     while(runing)
