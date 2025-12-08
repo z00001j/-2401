@@ -44,6 +44,7 @@ public:
     void User_Resgister();
     void User_Login();
     void User_Show_Ticket();
+    void User_Subscribe_Ticket();
 
     void Run();
 
@@ -61,4 +62,6 @@ private:
 
     int user_op;
     bool runing;
+
+    Json::Value m_val;
 };

@@ -60,6 +60,45 @@ bool mysql_client::mysql_Login(const string &tel,const string &password,string &
     mysql_free_result(r);
     return true;
 }
+bool mysql_client::mysql_Show_Ticket(Json::Value &resval)
+{
+    string sql="select tk_id,addr,max,num,use_date from ticket_info";
+    if(mysql_query(&mysql_con,sql.c_str())!=0)
+    {
+        cout<<"show ticket err"<<endl;
+        return false;
+    }
+
+    MYSQL_RES * r=mysql_store_result(&mysql_con);
+    if(r==NULL)
+    {
+        return false;
+    }
+
+ 
+    int n=mysql_num_rows(r);
+    if(n==0)
+    {  
+        resval["status"]="OK";
+        resval["num"]=0;
+        return true;
+    }
+    resval["status"]="OK";
+    resval["num"]=n;
+    for(int i=0;i<n;i++)
+    {
+        MYSQL_ROW row=mysql_fetch_row(r);
+        Json::Value tmp;
+        tmp["tk_id"]=row[0];
+        tmp["add"]=row[1];
+        tmp["max"]=row[2];
+        tmp["num"]=row[3];
+        tmp["use_date"]=row[4];
+        resval["arr"].append(tmp);
+
+    }
+    return true;
+}
 bool socket_listen::socket_init()
 {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -162,7 +201,22 @@ void socket_con::User_Login()
 }
 void socket_con::User_Show_Ticket()
 {
-    
+    Json::Value resval;
+    mysql_client cli;
+    if(!cli.mysql_ConnectServer())
+    {
+        Send_err();
+        return ;
+    }
+
+    if(!cli.mysql_Show_Ticket(resval))
+    {
+        Send_err();
+        return;
+    }
+
+    send(c,resval.toStyledString().c_str(),strlen(resval.toStyledString().c_str()),0);
+    return ;
 }
 
 void socket_con::Recv_data()

@@ -34,6 +34,7 @@ public:
     bool mysql_ConnectServer();
     bool mysql_Register(const string &tel,const string &password,const string &name);
     bool mysql_Login(const string &tel,const string &password, string &name);
+    bool mysql_Show_Ticket(Json::Value &resval);
 private:
     MYSQL mysql_con;
     string db_ips;

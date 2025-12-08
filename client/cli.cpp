@@ -163,6 +163,56 @@ void socket_client::User_Show_Ticket()
     send(sockfd,val.toStyledString().c_str(),strlen(val.toStyledString().c_str()),0);
     //
     char buff[4096]={0};
+    int n=recv(sockfd,buff,4095,0);
+    //cout<<buff<<endl;
+    if(n<=0)
+    {
+        cout<<"ser close"<<endl;
+        return;
+    }
+
+    m_val.clear();
+    Json::Reader Read;
+    if(!Read.parse(buff,m_val))
+    {
+        cout<<"解析失败"<<endl;
+        return;
+    }
+
+    string st=m_val["status"].toStyledString();
+    if(st.compare("OK")!=0)
+    {
+        cout<<"查询预约信息失败"<<endl;
+        return;
+    }
+
+    int num=m_val["num"].asInt();
+    if(num==0)
+    {
+        cout<<"没有可预约的信息"<<endl;
+        return;
+    }
+
+    cout<<"编号    地点名称   总票数  已预定   时间"<<endl;
+    for(int i=0;i<num;i++)
+    {
+        cout<<"----------------------------------------"<<endl;
+        cout<<m_val["arr"][i]["tk_id"].asString()<<"  ";
+        cout<<m_val["arr"][i]["add"].asString()<<"  ";
+        cout<<m_val["arr"][i]["max"].asString()<<"  ";
+        cout<<m_val["arr"][i]["num"].asString()<<"  ";
+        cout<<m_val["arr"][i]["use_date"].asString()<<"  "<<endl;
+        cout<<"----------------------------------------"<<endl;
+    }
+    cout<<endl;
+}
+void socket_client::User_Subscribe_Ticket()
+{
+    User_Show_Ticket();
+    cout<<"请输入要预定的编号："<<endl;
+    int index=0;
+    cin>>index;
+    
 }
 
 void socket_client::Run()
@@ -180,6 +230,7 @@ void socket_client::Run()
             User_Resgister();
             break;  
         case CKYY:
+            User_Show_Ticket();
             break;
         case YD:
             break;
