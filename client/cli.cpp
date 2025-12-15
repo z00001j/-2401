@@ -179,7 +179,7 @@ void socket_client::User_Show_Ticket()
         return;
     }
 
-    string st=m_val["status"].toStyledString();
+    string st=m_val["status"].asString(); 
     if(st.compare("OK")!=0)
     {
         cout<<"查询预约信息失败"<<endl;
@@ -193,7 +193,7 @@ void socket_client::User_Show_Ticket()
         return;
     }
 
-    cout<<"编号    地点名称   总票数  已预定   时间"<<endl;
+    cout<<"编号  地点名称    总票数  已预定 时间    "<<endl;
     for(int i=0;i<num;i++)
     {
         cout<<"----------------------------------------"<<endl;
@@ -206,13 +206,55 @@ void socket_client::User_Show_Ticket()
     }
     cout<<endl;
 }
+//显示我的预约
+void socket_client::User_Show_Sub_Ticket()
+{
+
+}
+//取消一条我的预约
+void socket_client::User_Cancel_Sub_Ticket()
+{
+
+}
 void socket_client::User_Subscribe_Ticket()
 {
     User_Show_Ticket();
     cout<<"请输入要预定的编号："<<endl;
     int index=0;
     cin>>index;
-    
+    //index 有效性检查
+
+    Json::Value val;
+    val["type"]=YD;
+    val["tel"]=usertel;
+    val["index"]=index;
+
+    send(sockfd,val.toStyledString().c_str(),strlen(val.toStyledString().c_str()),0);
+
+    char buff[256]={0};
+    int n=recv(sockfd,buff,255,0);
+    if(n<=0)
+    {
+        cout<<"ser close"<<endl;
+        return;
+    }
+
+    val.clear();
+    Json::Reader Read;
+    if(!Read.parse(buff,val))
+    {
+        cout<<"json解析失败"<<endl;
+        return;
+    }
+
+    string st=val["status"].asString();
+    if(st.compare("OK")!=0)
+    {
+        cout<<"预定失败"<<endl;
+        return;
+    }
+    cout<<"预定成功"<<endl;
+    return;
 }
 
 void socket_client::Run()
@@ -233,8 +275,13 @@ void socket_client::Run()
             User_Show_Ticket();
             break;
         case YD:
+            User_Subscribe_Ticket();
             break;
         case QXYD:
+            User_Cancel_Sub_Ticket();
+            break;
+        case CKYD:
+            User_Show_Sub_Ticket();
             break;
         case TC:
             runing=false; 

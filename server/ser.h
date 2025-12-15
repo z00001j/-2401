@@ -35,6 +35,12 @@ public:
     bool mysql_Register(const string &tel,const string &password,const string &name);
     bool mysql_Login(const string &tel,const string &password, string &name);
     bool mysql_Show_Ticket(Json::Value &resval);
+    bool mysql_Subscribe_Ticket(int tk_id,string tel);
+
+private:
+    bool mysql_user_begin();
+    bool mysql_user_commit();
+    bool mysql_user_rollback();
 private:
     MYSQL mysql_con;
     string db_ips;
@@ -104,8 +110,10 @@ public:
 
     void User_Resgister();
     void User_Login();
-    void User_Show_Ticket();
-
+    void User_Show_Ticket();//查看预约信息
+    void User_Subscribe_Ticket();//预定
+    void User_Show_Sub_Ticket();
+    void User_Cancel_Sub_Ticket();
 
 private:
     int c;

@@ -2,101 +2,184 @@
 
 bool mysql_client::mysql_ConnectServer()
 {
-    MYSQL* mysql=mysql_init(&mysql_con);
-    if(mysql==NULL)
+    MYSQL *mysql = mysql_init(&mysql_con);
+    if (mysql == NULL)
     {
         return false;
     }
 
-    mysql=mysql_real_connect(mysql,db_ips.c_str(),db_username.c_str(),db_password.c_str(),db_dbname.c_str(),3306,NULL,0);
-    if(mysql==NULL)
+    mysql = mysql_real_connect(mysql, db_ips.c_str(), db_username.c_str(), db_password.c_str(), db_dbname.c_str(), 3306, NULL, 0);
+    if (mysql == NULL)
     {
-        cout<<"connect db_server err"<<endl;
+        cout << "connect db_server err" << endl;
         return false;
     }
     return true;
 }
-bool mysql_client::mysql_Register(const string &tel,const string &password,const string &name)
+bool mysql_client::mysql_Register(const string &tel, const string &password, const string &name)
 {
-    //insert into user_info values(0,13300000000,'小李','123456',1);
-    string sql=string("insert into user_info values(0,'")+tel+string("','")+name+string("','")+password+string("',1);");
-    if(mysql_query(&mysql_con,sql.c_str())!=0)
+    // insert into user_info values(0,13300000000,'小李','123456',1);
+    string sql = string("insert into user_info values(0,'") + tel + string("','") + name + string("','") + password + string("',1);");
+    if (mysql_query(&mysql_con, sql.c_str()) != 0)
     {
         return false;
     }
     return true;
 }
-bool mysql_client::mysql_Login(const string &tel,const string &password,string &name)
+bool mysql_client::mysql_Login(const string &tel, const string &password, string &name)
 {
-    //select username,password from user_info where tel=13400000000
-    string sql1=string("select username,password from user_info where tel=")+tel;
-    if(mysql_query(&mysql_con,sql1.c_str())!=0)
+    // select username,password from user_info where tel=13400000000
+    string sql1 = string("select username,password from user_info where tel=") + tel;
+    if (mysql_query(&mysql_con, sql1.c_str()) != 0)
     {
         return false;
     }
 
-    MYSQL_RES* r=mysql_store_result(&mysql_con);//获取结果集
-    if(r==NULL)
+    MYSQL_RES *r = mysql_store_result(&mysql_con); // 获取结果集
+    if (r == NULL)
     {
         return false;
     }
 
-    int num=mysql_num_rows(r);//获取结果集有多少行，0行就是未查到，意味着该用户没有注册
-    if(num==0)
+    int num = mysql_num_rows(r); // 获取结果集有多少行，0行就是未查到，意味着该用户没有注册
+    if (num == 0)
     {
         mysql_free_result(r);
         return false;
     }
 
-    MYSQL_ROW row=mysql_fetch_row(r);
-    
-    string passwd=row[1];
-    if(password.compare(passwd)!=0)
+    MYSQL_ROW row = mysql_fetch_row(r);
+
+    string passwd = row[1];
+    if (password.compare(passwd) != 0)
     {
         return false;
     }
 
-    name=row[0];
+    name = row[0];
     mysql_free_result(r);
     return true;
 }
 bool mysql_client::mysql_Show_Ticket(Json::Value &resval)
 {
-    string sql="select tk_id,addr,max,num,use_date from ticket_info";
-    if(mysql_query(&mysql_con,sql.c_str())!=0)
+    string sql = "select tk_id,addr,max,num,use_date from ticket_info";
+    if (mysql_query(&mysql_con, sql.c_str()) != 0)
     {
-        cout<<"show ticket err"<<endl;
+        cout << "show ticket err" << endl;
         return false;
     }
 
-    MYSQL_RES * r=mysql_store_result(&mysql_con);
-    if(r==NULL)
+    MYSQL_RES *r = mysql_store_result(&mysql_con);
+    if (r == NULL)
     {
         return false;
     }
 
- 
-    int n=mysql_num_rows(r);
-    if(n==0)
-    {  
-        resval["status"]="OK";
-        resval["num"]=0;
+    int n = mysql_num_rows(r);
+    if (n == 0)
+    {
+        resval["status"] = "OK";
+        resval["num"] = 0;
         return true;
     }
-    resval["status"]="OK";
-    resval["num"]=n;
-    for(int i=0;i<n;i++)
+    resval["status"] = "OK";
+    resval["num"] = n;
+    for (int i = 0; i < n; i++)
     {
-        MYSQL_ROW row=mysql_fetch_row(r);
+        MYSQL_ROW row = mysql_fetch_row(r);
         Json::Value tmp;
-        tmp["tk_id"]=row[0];
-        tmp["add"]=row[1];
-        tmp["max"]=row[2];
-        tmp["num"]=row[3];
-        tmp["use_date"]=row[4];
+        tmp["tk_id"] = row[0];
+        tmp["add"] = row[1];
+        tmp["max"] = row[2];
+        tmp["num"] = row[3];
+        tmp["use_date"] = row[4];
         resval["arr"].append(tmp);
-
     }
+    return true;
+}
+bool mysql_client::mysql_user_begin()
+{
+    if(mysql_query(&mysql_con,"begin")!=0)
+    {
+        return false;
+    }
+    return true;
+}
+bool mysql_client::mysql_user_commit()
+{
+    if(mysql_query(&mysql_con,"commit")!=0)
+    {
+        return false;
+    }
+    return true;
+}
+bool mysql_client::mysql_user_rollback()
+{
+    if(mysql_query(&mysql_con,"rollback")!=0)
+    {
+        return false;
+    }
+    return true;
+}
+bool mysql_client::mysql_Subscribe_Ticket(int tk_id, string tel)
+{
+    mysql_user_begin();//启动事务
+    string s1=string("select max,num from ticket_info where tk_id=")+to_string(tk_id);
+    if(mysql_query(&mysql_con,s1.c_str())!=0)
+    {
+        cout<<"查询max,num失败"<<endl;
+        mysql_user_rollback();
+        return false;
+    }
+
+    MYSQL_RES *r=mysql_store_result(&mysql_con);
+    if(r==NULL)
+    {
+        cout<<"获取结果集失败"<<endl;
+        mysql_user_rollback();
+        return false;
+    }
+
+    int Num=mysql_num_rows(r);
+    if(Num!=1)
+    {
+        cout<<"记录行不为1"<<endl;
+        mysql_user_rollback();
+        return false;
+    }
+
+    MYSQL_ROW row=mysql_fetch_row(r);
+    string str_max=row[0];//总票数
+    string str_num=row[1];//当前已预定票数
+    int tk_max=atoi(str_max.c_str());
+    int tk_num=atoi(str_num.c_str());
+    if(tk_max<=tk_num)
+    {
+        cout<<"没有可用的票"<<endl;
+        mysql_user_rollback();
+        return false;
+    }
+
+    tk_num++;
+    string s2=string("update ticket_info set num=")+to_string(tk_num)+string(" where tk_id=")+to_string(tk_id);
+    if(mysql_query(&mysql_con,s2.c_str())!=0)
+    {
+        cout<<"修改预订票数失败"<<endl;
+        mysql_user_rollback();
+        return false;
+    }
+
+    //sub_ticket
+    //insert into sub_ticket values(0,1,'13500000000',now());
+    string s3=string("insert into sub_ticket values(0,")+to_string(tk_id)+string(",'")+tel+string("',now())");
+    if(mysql_query(&mysql_con,s3.c_str())!=0)
+    {
+        cout<<"存入信息失败"<<endl;
+        mysql_user_rollback();
+        return false;
+    }
+
+    mysql_user_commit();
     return true;
 }
 bool socket_listen::socket_init()
@@ -135,90 +218,122 @@ int socket_listen::accept_client()
 }
 void socket_con::Send_err()
 {
-      Json::Value res_val;
-      res_val["status"]="ERR";
-      send(c,res_val.toStyledString().c_str(),strlen(res_val.toStyledString().c_str()),0);
+    Json::Value res_val;
+    res_val["status"] = "ERR";
+    send(c, res_val.toStyledString().c_str(), strlen(res_val.toStyledString().c_str()), 0);
 }
 void socket_con::Send_ok()
 {
-     Json::Value res_val;
-     res_val["status"]="OK";
-     send(c,res_val.toStyledString().c_str(),strlen(res_val.toStyledString().c_str()),0);
+    Json::Value res_val;
+    res_val["status"] = "OK";
+    send(c, res_val.toStyledString().c_str(), strlen(res_val.toStyledString().c_str()), 0);
 }
-//用户注册
+// 用户注册
 void socket_con::User_Resgister()
 {
-    string tel,password,username;
-    tel=val["user_tel"].asString();
-    password=val["user_password"].asString();
-    username=val["user_name"].asString();
+    string tel, password, username;
+    tel = val["user_tel"].asString();
+    password = val["user_password"].asString();
+    username = val["user_name"].asString();
 
-    if(tel.empty()||password.empty()||username.empty())
+    if (tel.empty() || password.empty() || username.empty())
     {
         Send_err();
     }
     mysql_client cli;
-    if(!cli.mysql_ConnectServer())
+    if (!cli.mysql_ConnectServer())
     {
         Send_err();
-        return ;
+        return;
     }
 
-    if(!cli.mysql_Register(tel,password,username))
+    if (!cli.mysql_Register(tel, password, username))
     {
         Send_err();
-        return ;
+        return;
     }
 
     Send_ok();
     return;
 }
-//用户登陆
+// 用户登陆
 void socket_con::User_Login()
 {
-    string tel=val["user_tel"].asString();
-    string password=val["user_password"].asString();
+    string tel = val["user_tel"].asString();
+    string password = val["user_password"].asString();
     string user_name;
 
     mysql_client cli;
-    if(!cli.mysql_ConnectServer())
+    if (!cli.mysql_ConnectServer())
     {
         Send_err();
-        return ;
+        return;
     }
 
-    if(!cli.mysql_Login(tel,password,user_name))
+    if (!cli.mysql_Login(tel, password, user_name))
     {
         Send_err();
         return;
     }
 
     Json::Value res_val;
-    res_val["status"]="OK";
-    res_val["user_name"]=user_name;
-    send(c,res_val.toStyledString().c_str(),strlen(res_val.toStyledString().c_str()),0);  
+    res_val["status"] = "OK";
+    res_val["user_name"] = user_name;
+    send(c, res_val.toStyledString().c_str(), strlen(res_val.toStyledString().c_str()), 0);
     return;
 }
 void socket_con::User_Show_Ticket()
 {
     Json::Value resval;
     mysql_client cli;
-    if(!cli.mysql_ConnectServer())
-    {
-        Send_err();
-        return ;
-    }
-
-    if(!cli.mysql_Show_Ticket(resval))
+    if (!cli.mysql_ConnectServer())
     {
         Send_err();
         return;
     }
 
-    send(c,resval.toStyledString().c_str(),strlen(resval.toStyledString().c_str()),0);
-    return ;
+    if (!cli.mysql_Show_Ticket(resval))
+    {
+        Send_err();
+        return;
+    }
+
+    send(c, resval.toStyledString().c_str(), strlen(resval.toStyledString().c_str()), 0);
+    return;
+}
+void socket_con::User_Subscribe_Ticket()
+{
+    // client -> tk_id  tel
+    int tk_id = val["index"].asInt();
+    string tel = val["tel"].asString();
+
+    mysql_client cli;
+    if (!cli.mysql_ConnectServer())
+    {
+        cout << "connect mysql err" << endl;
+        Send_err();
+        return;
+    }
+
+    if (!cli.mysql_Subscribe_Ticket(tk_id, tel))
+    {
+        Send_err();
+        return;
+    }
+
+    Send_ok();
+    return;
 }
 
+void socket_con::User_Show_Sub_Ticket()
+{
+
+}
+
+void socket_con::User_Cancel_Sub_Ticket()
+{
+
+}
 void socket_con::Recv_data()
 {
     char buff[128] = {0};
@@ -236,14 +351,14 @@ void socket_con::Recv_data()
     Json::Reader Read;
     if (!Read.parse(buff, val))
     {
-        cout << "Recv_data:解析Json失败"<<endl;
+        cout << "Recv_data:解析Json失败" << endl;
         Send_err();
         return;
     }
-    
-    int ops=val["type"].asInt();
-    //DL=1，ZC，CKYY，YD，CKYD，QXYD，TC
-    switch(ops)
+
+    int ops = val["type"].asInt();
+    // DL=1，ZC，CKYY，YD，CKYD，QXYD，TC
+    switch (ops)
     {
     case DL:
         User_Login();
@@ -254,11 +369,20 @@ void socket_con::Recv_data()
     case CKYY:
         User_Show_Ticket();
         break;
+    case YD:
+        User_Subscribe_Ticket();
+        break;
+    case CKYD:
+        User_Show_Sub_Ticket();
+        break;
+    case QXYD:
+        User_Cancel_Sub_Ticket();
+        break;
     default:
         break;
     }
 
-// 解析
+    // 解析
 }
 void SOCK_CON_CALLBACK(int c, short ev, void *arg)
 {

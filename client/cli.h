@@ -45,6 +45,8 @@ public:
     void User_Login();
     void User_Show_Ticket();
     void User_Subscribe_Ticket();
+    void User_Show_Sub_Ticket();
+    void User_Cancel_Sub_Ticket();
 
     void Run();
 
