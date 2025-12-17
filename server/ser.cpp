@@ -97,6 +97,42 @@ bool mysql_client::mysql_Show_Ticket(Json::Value &resval)
     }
     return true;
 }
+bool mysql_client::mysql_Show_Sub_Ticket(Json::Value &resval,string tel)
+{
+    //select tk_id,curr_time from sub_ticket where tel='13500000000';
+    //string sql=string("select tk_id,curr_time from sub_ticket where tel='")+tel+string("'");
+    string sql=string("select tk_id,curr_time from sub_ticket where tel='")+tel+string("'");
+    if(mysql_query(&mysql_con,sql.c_str())!=0)
+    {
+        cout<<"show my tciket err"<<endl;
+        return false;
+    }
+
+    MYSQL_RES* r=mysql_store_result(&mysql_con);
+    if(r==NULL)
+    {
+        return false;
+    }
+
+    resval["status"]="OK";
+    int n=mysql_num_rows(r);
+    if(n==0)
+    {
+        resval["num"]=0;
+        return true;
+    }
+
+    resval["num"]=n;
+    for(int i=0;i<n;i++)
+    {
+        MYSQL_ROW row=mysql_fetch_row(r);
+        Json::Value tmp;
+        tmp["tk_id"]=row[0];
+        tmp["curr_time"]=row[1];
+        resval["arr"].append(tmp);
+    }
+    return true;
+}
 bool mysql_client::mysql_user_begin()
 {
     if(mysql_query(&mysql_con,"begin")!=0)
@@ -327,7 +363,26 @@ void socket_con::User_Subscribe_Ticket()
 
 void socket_con::User_Show_Sub_Ticket()
 {
+    string tel = val["tel"].asString();
 
+    mysql_client cli;
+    Json::Value resval;
+
+    if(!cli.mysql_ConnectServer())
+    {
+        cout<<"connect mysql err"<<endl;
+        Send_err();
+        return;
+    }
+
+    if(!cli.mysql_Show_Sub_Ticket(resval,tel))
+    {
+        Send_err();
+        return;
+    }
+    
+    send(c,resval.toStyledString().c_str(),strlen(resval.toStyledString().c_str()),0);
+    return;
 }
 
 void socket_con::User_Cancel_Sub_Ticket()
@@ -336,7 +391,7 @@ void socket_con::User_Cancel_Sub_Ticket()
 }
 void socket_con::Recv_data()
 {
-    char buff[128] = {0};
+    char buff[256] = {0};
     int n = recv(c, buff, 255, 0);
     if (n <= 0)
     {

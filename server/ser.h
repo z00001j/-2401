@@ -36,6 +36,7 @@ public:
     bool mysql_Login(const string &tel,const string &password, string &name);
     bool mysql_Show_Ticket(Json::Value &resval);
     bool mysql_Subscribe_Ticket(int tk_id,string tel);
+    bool mysql_Show_Sub_Ticket(Json::Value &resval,string tel);
 
 private:
     bool mysql_user_begin();

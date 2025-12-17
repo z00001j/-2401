@@ -209,7 +209,51 @@ void socket_client::User_Show_Ticket()
 //显示我的预约
 void socket_client::User_Show_Sub_Ticket()
 {
+    Json::Value val;
+    val["type"]=CKYD;
+    val["tel"]=usertel;
+    send(sockfd,val.toStyledString().c_str(),strlen(val.toStyledString().c_str()),0);
 
+    char buff[4096]={0};
+    int n=recv(sockfd,buff,4095,0);
+    if(n<=0)
+    {
+        cout<<"ser err\n"<<endl;
+        return ;
+    }
+
+    m_val.clear();
+    Json::Reader Read;
+    if(!Read.parse(buff,m_val))
+    {
+        cout<<"解析失败"<<endl;
+        return;
+    }
+
+    string st=m_val["status"].asString();
+    if(st.compare("OK")!=0)
+    {
+        cout<<"查询预定消息失败"<<endl;
+        return;
+    }
+
+    int num=m_val["num"].asInt();
+    if(num==0)
+    {
+        cout<<"没有任何预定信息"<<endl;
+        return;
+    }
+
+    cout<<"tk_id   时间           "<<endl;
+    for(int i=0;i<num;i++)
+    {
+        cout<<"---------------------"<<endl;
+        cout<<m_val["arr"][i]["tk_id"].asString();
+        cout<<m_val["arr"][i]["curr_time"].asString();
+        cout<<"---------------------"<<endl;
+    }
+    cout<<endl;
+    return;
 }
 //取消一条我的预约
 void socket_client::User_Cancel_Sub_Ticket()
