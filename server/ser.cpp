@@ -99,9 +99,11 @@ bool mysql_client::mysql_Show_Ticket(Json::Value &resval)
 }
 bool mysql_client::mysql_Show_Sub_Ticket(Json::Value &resval,string tel)
 {
-    //select tk_id,curr_time from sub_ticket where tel='13500000000';
+    //单表查询：select tk_id,curr_time from sub_ticket where tel='13500000000';
     //string sql=string("select tk_id,curr_time from sub_ticket where tel='")+tel+string("'");
-    string sql=string("select tk_id,curr_time from sub_ticket where tel='")+tel+string("'");
+    //联表查询：select s.yi_id,s.tk_id, t.addr, t.use_date, s.curr_time from sub_ticket s join ticket_info t on s.tk_id = t.tk_id where s.tel='13500000000';
+    string sql=string("select s.yi_id,s.tk_id,t.addr, t.use_date,s.curr_time from sub_ticket s join ticket_info t on s.tk_id=t.tk_id where s.tel='")+tel+string("'");
+
     if(mysql_query(&mysql_con,sql.c_str())!=0)
     {
         cout<<"show my tciket err"<<endl;
@@ -127,10 +129,37 @@ bool mysql_client::mysql_Show_Sub_Ticket(Json::Value &resval,string tel)
     {
         MYSQL_ROW row=mysql_fetch_row(r);
         Json::Value tmp;
-        tmp["tk_id"]=row[0];
-        tmp["curr_time"]=row[1];
+        tmp["yi_id"]=row[0];
+        tmp["tk_id"]=row[1];
+        tmp["addr"]=row[2];
+        tmp["use_date"]=row[3];
+        tmp["curr_time"]=row[4];
         resval["arr"].append(tmp);
     }
+    return true;
+}
+bool mysql_client::myql_ser_Cancel_Sub_Ticket(int yi_id)
+{
+    mysql_user_begin();
+    //update ticket_info set num = num - 1 where tk_id = (select tk_id from (select tk_id from sub_ticket where yi_id = 4) as tmp);
+    string s1=string("update ticket_info set num=num-1 where tk_id = (select tk_id from (select tk_id from sub_ticket where yi_id=")+to_string(yi_id)+string(") as tmp);");
+    if(mysql_query(&mysql_con,s1.c_str())!=0)
+    {
+        cout<<"update err"<<endl;
+        mysql_user_rollback();
+        return false;
+    }
+    //delete from sub_ticket where yi_id = 4;
+    string s2=string("delete from sub_ticket where yi_id=")+to_string(yi_id)+string(";");
+    if(mysql_query(&mysql_con,s2.c_str())!=0)
+
+    {
+        cout<<"delete err"<<endl;
+        mysql_user_rollback();
+        return false;
+    }
+
+    mysql_user_commit();
     return true;
 }
 bool mysql_client::mysql_user_begin()
@@ -387,7 +416,24 @@ void socket_con::User_Show_Sub_Ticket()
 
 void socket_con::User_Cancel_Sub_Ticket()
 {
+    int yi_id=val["index"].asInt();
 
+    mysql_client cli;
+    if(!cli.mysql_ConnectServer())
+    {
+        cout<<"connect mysql err"<<endl;
+        Send_err();
+        return;
+    }
+
+    if(!cli.myql_ser_Cancel_Sub_Ticket(yi_id))
+    {
+        Send_err();
+        return;
+    }
+
+    Send_ok();
+    return;
 }
 void socket_con::Recv_data()
 {

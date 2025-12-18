@@ -218,7 +218,7 @@ void socket_client::User_Show_Sub_Ticket()
     int n=recv(sockfd,buff,4095,0);
     if(n<=0)
     {
-        cout<<"ser err\n"<<endl;
+        cout<<"ser close"<<endl;
         return ;
     }
 
@@ -244,13 +244,16 @@ void socket_client::User_Show_Sub_Ticket()
         return;
     }
 
-    cout<<"tk_id   时间           "<<endl;
+    cout<<"编号     tk_id    地点         使用时间        购买时间   "<<endl;
     for(int i=0;i<num;i++)
     {
-        cout<<"---------------------"<<endl;
-        cout<<m_val["arr"][i]["tk_id"].asString();
-        cout<<m_val["arr"][i]["curr_time"].asString();
-        cout<<"---------------------"<<endl;
+        cout<<"------------------------------------------------------------"<<endl;
+        cout<<m_val["arr"][i]["yi_id"].asString()<<"      ";
+        cout<<m_val["arr"][i]["tk_id"].asString()<<"        ";
+        cout<<m_val["arr"][i]["addr"].asString()<<"     ";
+        cout<<m_val["arr"][i]["use_date"].asString()<<"     ";
+        cout<<m_val["arr"][i]["curr_time"].asString()<<endl;
+        cout<<"------------------------------------------------------------"<<endl;
     }
     cout<<endl;
     return;
@@ -258,7 +261,40 @@ void socket_client::User_Show_Sub_Ticket()
 //取消一条我的预约
 void socket_client::User_Cancel_Sub_Ticket()
 {
+    User_Show_Sub_Ticket();
+    cout<<"请输入你要删除的编号："<<endl;
+    int index=0;
+    cin>>index;
 
+    Json::Value val;
+    val["type"]=QXYD;
+    val["index"]=index;
+    send(sockfd,val.toStyledString().c_str(),strlen(val.toStyledString().c_str()),0);
+
+    char buff[4096]={0};
+    int n=recv(sockfd,buff,4095,0);
+    if(n<=0)
+    {
+        cout<<"ser close"<<endl;
+        return ;
+    }
+
+    val.clear();
+    Json::Reader Read;
+    if(!Read.parse(buff,val))
+    {
+        cout<<"Json解析失败"<<endl;
+        return;
+    }
+
+    string st=val["status"].asString();
+    if(st.compare("OK")!=0)
+    {
+        cout<<"取消预定失败"<<endl;
+        return;
+    }
+    cout<<"取消预定成功"<<endl;
+    return;
 }
 void socket_client::User_Subscribe_Ticket()
 {

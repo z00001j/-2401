@@ -37,7 +37,7 @@ public:
     bool mysql_Show_Ticket(Json::Value &resval);
     bool mysql_Subscribe_Ticket(int tk_id,string tel);
     bool mysql_Show_Sub_Ticket(Json::Value &resval,string tel);
-
+    bool myql_ser_Cancel_Sub_Ticket(int yi_id);
 private:
     bool mysql_user_begin();
     bool mysql_user_commit();
