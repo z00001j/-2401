@@ -1,0 +1,25 @@
+# 编译文件
+client/clt
+server/ser
+*.o
+*.gch
+*.exe
+
+# 临时文件
+*.tmp
+*.log
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# 数据库配置
+db_config.h
+*.conf
